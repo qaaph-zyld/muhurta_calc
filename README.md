@@ -1,4 +1,19 @@
-# Getting Started with Create React App
+# Muhurat Finder Lite
+
+A lightweight Progressive Web App (PWA) for calculating auspicious times (muhurats) based on simplified astronomical models. The application allows users to input birth data, calculate muhurats, schedule notifications, and toggle between light and dark themes.
+
+## Deployment
+
+The application is deployed and accessible at: [https://golden-macaron-054644.netlify.app/](https://golden-macaron-054644.netlify.app/)
+
+## Features
+
+- Birth data input and storage
+- Muhurat calculation based on simplified astronomical models
+- Notification scheduling for important muhurats
+- Theme toggling (light/dark mode)
+- Offline capability
+- LocalStorage persistence
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
