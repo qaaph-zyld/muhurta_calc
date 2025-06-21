@@ -4,7 +4,7 @@ A lightweight Progressive Web App (PWA) for calculating auspicious times (muhura
 
 ## Deployment
 
-The application is deployed and accessible at: [https://golden-macaron-054644.netlify.app/](https://golden-macaron-054644.netlify.app/)
+The application is deployed and accessible at: [https://muhurtacalculation.netlify.app/](https://muhurtacalculation.netlify.app/)
 
 ## Features
 
