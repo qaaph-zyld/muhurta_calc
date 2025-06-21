@@ -27,77 +27,67 @@ interface EventType {
   auspicious: number[];
 }
 
-// Major cities for location suggestions
-const MAJOR_CITIES = [
-  // India - Major Cities
-  'Mumbai, India', 'Delhi, India', 'Bangalore, India', 'Chennai, India', 'Kolkata, India',
-  'Hyderabad, India', 'Ahmedabad, India', 'Pune, India', 'Surat, India', 'Jaipur, India',
-  'Lucknow, India', 'Kanpur, India', 'Nagpur, India', 'Indore, India', 'Thane, India',
-  'Bhopal, India', 'Visakhapatnam, India', 'Patna, India', 'Vadodara, India', 'Ghaziabad, India',
-  'Ludhiana, India', 'Agra, India', 'Nashik, India', 'Faridabad, India', 'Meerut, India',
-  'Rajkot, India', 'Varanasi, India', 'Srinagar, India', 'Aurangabad, India', 'Dhanbad, India',
-  'Amritsar, India', 'Allahabad, India', 'Ranchi, India', 'Howrah, India', 'Coimbatore, India',
-  'Jabalpur, India', 'Gwalior, India', 'Vijayawada, India', 'Jodhpur, India', 'Madurai, India',
-  'Raipur, India', 'Kota, India', 'Chandigarh, India', 'Guwahati, India', 'Mysore, India',
-  'Bareilly, India', 'Tiruchirapalli, India', 'Bhubaneswar, India', 'Thiruvananthapuram, India',
+// Interface for GeoDB Cities API response
+interface GeoDBCity {
+  id: number;
+  wikiDataId: string;
+  type: string;
+  city: string;
+  name: string;
+  country: string;
+  countryCode: string;
+  region: string;
+  regionCode: string;
+  latitude: number;
+  longitude: number;
+  population: number;
+}
+
+interface GeoDBResponse {
+  data: GeoDBCity[];
+  metadata: {
+    currentOffset: number;
+    totalCount: number;
+  };
+}
+
+// Function to fetch city suggestions from GeoDB Cities API
+const fetchCitySuggestions = async (query: string): Promise<string[]> => {
+  if (!query || query.length < 2) return [];
   
-  // USA - Major Cities
-  'New York, USA', 'Los Angeles, USA', 'Chicago, USA', 'Houston, USA', 'Phoenix, USA',
-  'Philadelphia, USA', 'San Antonio, USA', 'San Diego, USA', 'Dallas, USA', 'San Jose, USA',
-  'Austin, USA', 'Jacksonville, USA', 'Fort Worth, USA', 'Columbus, USA', 'Indianapolis, USA',
-  'Charlotte, USA', 'San Francisco, USA', 'Seattle, USA', 'Denver, USA', 'Washington DC, USA',
-  'Boston, USA', 'El Paso, USA', 'Nashville, USA', 'Detroit, USA', 'Portland, USA',
-  'Las Vegas, USA', 'Oklahoma City, USA', 'Memphis, USA', 'Louisville, USA', 'Baltimore, USA',
-  'Milwaukee, USA', 'Albuquerque, USA', 'Tucson, USA', 'Fresno, USA', 'Sacramento, USA',
-  'Atlanta, USA', 'Miami, USA', 'Tampa, USA', 'Orlando, USA', 'Pittsburgh, USA',
-  
-  // UK - Major Cities
-  'London, UK', 'Birmingham, UK', 'Manchester, UK', 'Glasgow, UK', 'Liverpool, UK',
-  'Bristol, UK', 'Sheffield, UK', 'Leeds, UK', 'Edinburgh, UK', 'Leicester, UK',
-  'Coventry, UK', 'Cardiff, UK', 'Belfast, UK', 'Nottingham, UK', 'Newcastle, UK',
-  'Southampton, UK', 'Portsmouth, UK', 'Aberdeen, UK', 'Cambridge, UK', 'Oxford, UK',
-  
-  // Europe - Major Cities
-  'Paris, France', 'Berlin, Germany', 'Madrid, Spain', 'Rome, Italy', 'Amsterdam, Netherlands',
-  'Vienna, Austria', 'Brussels, Belgium', 'Munich, Germany', 'Milan, Italy', 'Barcelona, Spain',
-  'Prague, Czech Republic', 'Warsaw, Poland', 'Budapest, Hungary', 'Stockholm, Sweden', 'Copenhagen, Denmark',
-  'Dublin, Ireland', 'Athens, Greece', 'Lisbon, Portugal', 'Helsinki, Finland', 'Oslo, Norway',
-  'Zurich, Switzerland', 'Geneva, Switzerland', 'Frankfurt, Germany', 'Hamburg, Germany', 'Lyon, France',
-  'Marseille, France', 'Naples, Italy', 'Turin, Italy', 'Valencia, Spain', 'Seville, Spain',
-  'Krakow, Poland', 'Rotterdam, Netherlands', 'Gothenburg, Sweden', 'Antwerp, Belgium', 'Nice, France',
-  
-  // Asia - Major Cities
-  'Tokyo, Japan', 'Beijing, China', 'Shanghai, China', 'Seoul, South Korea', 'Singapore',
-  'Hong Kong', 'Bangkok, Thailand', 'Jakarta, Indonesia', 'Manila, Philippines', 'Kuala Lumpur, Malaysia',
-  'Taipei, Taiwan', 'Ho Chi Minh City, Vietnam', 'Hanoi, Vietnam', 'Osaka, Japan', 'Kyoto, Japan',
-  'Yokohama, Japan', 'Shenzhen, China', 'Guangzhou, China', 'Chengdu, China', 'Wuhan, China',
-  'Tianjin, China', 'Chongqing, China', 'Busan, South Korea', 'Incheon, South Korea', 'Yangon, Myanmar',
-  'Karachi, Pakistan', 'Lahore, Pakistan', 'Dhaka, Bangladesh', 'Colombo, Sri Lanka', 'Kathmandu, Nepal',
-  'Phnom Penh, Cambodia', 'Vientiane, Laos', 'Ulaanbaatar, Mongolia', 'Astana, Kazakhstan', 'Tashkent, Uzbekistan',
-  
-  // Middle East - Major Cities
-  'Dubai, UAE', 'Abu Dhabi, UAE', 'Doha, Qatar', 'Riyadh, Saudi Arabia', 'Jeddah, Saudi Arabia',
-  'Istanbul, Turkey', 'Ankara, Turkey', 'Tehran, Iran', 'Baghdad, Iraq', 'Amman, Jordan',
-  'Beirut, Lebanon', 'Jerusalem, Israel', 'Tel Aviv, Israel', 'Kuwait City, Kuwait', 'Muscat, Oman',
-  'Manama, Bahrain', 'Damascus, Syria', 'Cairo, Egypt', 'Alexandria, Egypt', 'Casablanca, Morocco',
-  
-  // Africa - Major Cities
-  'Cairo, Egypt', 'Lagos, Nigeria', 'Kinshasa, DR Congo', 'Johannesburg, South Africa', 'Cape Town, South Africa',
-  'Durban, South Africa', 'Accra, Ghana', 'Nairobi, Kenya', 'Addis Ababa, Ethiopia', 'Dar es Salaam, Tanzania',
-  'Algiers, Algeria', 'Tunis, Tunisia', 'Rabat, Morocco', 'Dakar, Senegal', 'Abidjan, Ivory Coast',
-  'Khartoum, Sudan', 'Luanda, Angola', 'Maputo, Mozambique', 'Harare, Zimbabwe', 'Lusaka, Zambia',
-  
-  // Australia & Oceania - Major Cities
-  'Sydney, Australia', 'Melbourne, Australia', 'Brisbane, Australia', 'Perth, Australia', 'Adelaide, Australia',
-  'Gold Coast, Australia', 'Auckland, New Zealand', 'Wellington, New Zealand', 'Christchurch, New Zealand',
-  'Suva, Fiji', 'Port Moresby, Papua New Guinea', 'Honolulu, USA', 'Nukualofa, Tonga', 'Apia, Samoa',
-  
-  // South & Central America - Major Cities
-  'Rio de Janeiro, Brazil', 'São Paulo, Brazil', 'Buenos Aires, Argentina', 'Lima, Peru', 'Bogotá, Colombia',
-  'Santiago, Chile', 'Caracas, Venezuela', 'Mexico City, Mexico', 'Guadalajara, Mexico', 'Monterrey, Mexico',
-  'Panama City, Panama', 'San José, Costa Rica', 'Havana, Cuba', 'Santo Domingo, Dominican Republic',
-  'Guatemala City, Guatemala', 'San Salvador, El Salvador', 'Tegucigalpa, Honduras', 'Managua, Nicaragua',
-  'Quito, Ecuador', 'La Paz, Bolivia', 'Asunción, Paraguay', 'Montevideo, Uruguay'
+  try {
+    const response = await fetch(
+      `https://wft-geo-db.p.rapidapi.com/v1/geo/cities?namePrefix=${encodeURIComponent(query)}&limit=10&sort=-population`,
+      {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY', // User needs to replace with their own RapidAPI key
+          'X-RapidAPI-Host': 'wft-geo-db.p.rapidapi.com'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data: GeoDBResponse = await response.json();
+    
+    // Format city suggestions as "City, Country"
+    return data.data.map(city => `${city.city}, ${city.country}`);
+  } catch (error) {
+    console.error('Error fetching city suggestions:', error);
+    return [];
+  }
+};
+
+// Fallback cities list in case API fails or is rate-limited
+const FALLBACK_CITIES = [
+  'Mumbai, India', 'Delhi, India', 'New York, USA', 'London, UK', 'Tokyo, Japan',
+  'Paris, France', 'Sydney, Australia', 'Berlin, Germany', 'Rome, Italy', 'Madrid, Spain',
+  'Toronto, Canada', 'Moscow, Russia', 'Cairo, Egypt', 'Rio de Janeiro, Brazil',
+  'Cape Town, South Africa', 'Mexico City, Mexico', 'Bangkok, Thailand', 'Seoul, South Korea',
+  'Amsterdam, Netherlands', 'Istanbul, Turkey', 'Dubai, UAE', 'Singapore', 'Hong Kong'
 ];
 
 // Astronomical calculation utilities (simplified ephemeris)
@@ -233,17 +223,39 @@ export default function MuhuratFinderLite() {
     }
   };
 
-  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLocationChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setBirthData(prev => ({ ...prev, location: value }));
     
     if (value.length > 1) {
-      const filteredSuggestions = MAJOR_CITIES.filter(city => 
-        city.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 5); // Limit to 5 suggestions
-      
-      setLocationSuggestions(filteredSuggestions);
-      setShowSuggestions(filteredSuggestions.length > 0);
+      try {
+        // Fetch suggestions from the API
+        const suggestions = await fetchCitySuggestions(value);
+        
+        // If API returns results, use them; otherwise, fall back to local filtering
+        if (suggestions.length > 0) {
+          setLocationSuggestions(suggestions);
+          setShowSuggestions(true);
+        } else {
+          // Fallback to local filtering if API returns no results
+          const filteredSuggestions = FALLBACK_CITIES.filter(city => 
+            city.toLowerCase().includes(value.toLowerCase())
+          ).slice(0, 5); // Limit to 5 suggestions
+          
+          setLocationSuggestions(filteredSuggestions);
+          setShowSuggestions(filteredSuggestions.length > 0);
+        }
+      } catch (error) {
+        console.error('Error getting location suggestions:', error);
+        
+        // Fallback to local filtering on error
+        const filteredSuggestions = FALLBACK_CITIES.filter(city => 
+          city.toLowerCase().includes(value.toLowerCase())
+        ).slice(0, 5);
+        
+        setLocationSuggestions(filteredSuggestions);
+        setShowSuggestions(filteredSuggestions.length > 0);
+      }
     } else {
       setShowSuggestions(false);
     }
