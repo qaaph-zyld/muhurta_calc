@@ -1,5 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, Star, Bell, Settings, MapPin, Sun, Moon } from 'lucide-react';
+
+// TypeScript interfaces
+interface BirthData {
+  date: string;
+  time: string;
+  location: string;
+}
+
+interface Muhurat {
+  id: string;
+  date: string;
+  time: string;
+  type: string;
+  score: number;
+  nakshatra: string;
+  tithi: string;
+  description: string;
+  details: string;
+}
+
+interface EventType {
+  name: string;
+  icon: string;
+  color: string;
+  auspicious: number[];
+}
+
+// Major cities for location suggestions
+const MAJOR_CITIES = [
+  'New York, USA', 'London, UK', 'Tokyo, Japan', 'Paris, France', 'Sydney, Australia',
+  'Mumbai, India', 'Delhi, India', 'Bangalore, India', 'Chennai, India', 'Kolkata, India',
+  'Beijing, China', 'Shanghai, China', 'Dubai, UAE', 'Singapore', 'Hong Kong',
+  'Berlin, Germany', 'Rome, Italy', 'Madrid, Spain', 'Toronto, Canada', 'Moscow, Russia',
+  'Cairo, Egypt', 'Rio de Janeiro, Brazil', 'Cape Town, South Africa', 'Mexico City, Mexico',
+  'Bangkok, Thailand', 'Seoul, South Korea', 'Amsterdam, Netherlands', 'Istanbul, Turkey'
+];
 
 // Astronomical calculation utilities (simplified ephemeris)
 const NAKSHATRAS = [
@@ -10,7 +46,7 @@ const NAKSHATRAS = [
   'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'
 ];
 
-const EVENT_TYPES = {
+const EVENT_TYPES: Record<string, EventType> = {
   wedding: { name: 'Wedding', icon: '💍', color: 'bg-rose-100 text-rose-800', auspicious: [1, 3, 5, 7, 10, 11, 13] },
   travel: { name: 'Travel', icon: '✈️', color: 'bg-blue-100 text-blue-800', auspicious: [2, 4, 6, 8, 10, 12, 14] },
   business: { name: 'Business', icon: '🚀', color: 'bg-green-100 text-green-800', auspicious: [1, 2, 5, 9, 11, 13, 15] },
@@ -19,21 +55,21 @@ const EVENT_TYPES = {
 };
 
 // Simplified astronomical calculations
-const calculateLunarDay = (date) => {
+const calculateLunarDay = (date: Date): number => {
   const baseDate = new Date('2024-01-01');
   const diffTime = date.getTime() - baseDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   return (diffDays % 30) + 1;
 };
 
-const getNakshatra = (date) => {
+const getNakshatra = (date: Date): string => {
   const baseDate = new Date('2024-01-01');
   const diffTime = date.getTime() - baseDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   return NAKSHATRAS[diffDays % 27];
 };
 
-const calculateMuhuratScore = (date, eventType, birthData) => {
+const calculateMuhuratScore = (date: Date, eventType: string, birthData: BirthData): number => {
   const tithi = calculateLunarDay(date);
   const nakshatra = getNakshatra(date);
   const dayOfWeek = date.getDay();
@@ -59,8 +95,8 @@ const calculateMuhuratScore = (date, eventType, birthData) => {
   return Math.min(100, Math.max(10, score));
 };
 
-const generateOptimizedMuhurats = (birthData, eventType) => {
-  const muhurats = [];
+const generateOptimizedMuhurats = (birthData: BirthData, eventType: string): Muhurat[] => {
+  const muhurats: Muhurat[] = [];
   const startDate = new Date();
   
   for (let i = 0; i < 90; i++) {
@@ -95,19 +131,34 @@ const generateOptimizedMuhurats = (birthData, eventType) => {
 };
 
 export default function MuhuratFinderLite() {
-  const [currentView, setCurrentView] = useState('onboarding');
-  const [birthData, setBirthData] = useState({ date: '', time: '', location: '' });
-  const [selectedEventType, setSelectedEventType] = useState('wedding');
-  const [muhurats, setMuhurats] = useState([]);
-  const [selectedMuhurat, setSelectedMuhurat] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [currentView, setCurrentView] = useState<'onboarding' | 'dashboard'>('onboarding');
+  const [birthData, setBirthData] = useState<BirthData>({ date: '', time: '', location: '' });
+  const [selectedEventType, setSelectedEventType] = useState<string>('wedding');
+  const [muhurats, setMuhurats] = useState<Muhurat[]>([]);
+  const [selectedMuhurat, setSelectedMuhurat] = useState<Muhurat | null>(null);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const suggestionsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const savedData = localStorage.getItem('muhuratBirthData');
     if (savedData) {
-      setBirthData(JSON.parse(savedData));
+      setBirthData(JSON.parse(savedData) as BirthData);
       setCurrentView('dashboard');
     }
+
+    // Close suggestions when clicking outside
+    const handleClickOutside = (event) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleSubmit = (e) => {
@@ -119,12 +170,33 @@ export default function MuhuratFinderLite() {
     }
   };
 
-  const generateMuhurats = () => {
-    const calculatedMuhurats = generateOptimizedMuhurats(birthData, selectedEventType);
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setBirthData(prev => ({ ...prev, location: value }));
+    
+    if (value.length > 1) {
+      const filteredSuggestions = MAJOR_CITIES.filter(city => 
+        city.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 5); // Limit to 5 suggestions
+      
+      setLocationSuggestions(filteredSuggestions);
+      setShowSuggestions(filteredSuggestions.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectLocation = (location: string) => {
+    setBirthData(prev => ({ ...prev, location }));
+    setShowSuggestions(false);
+  };
+
+  const generateMuhurats = (eventType = selectedEventType) => {
+    const calculatedMuhurats = generateOptimizedMuhurats(birthData, eventType);
     setMuhurats(calculatedMuhurats);
   };
 
-  const scheduleReminder = (muhurat) => {
+  const scheduleReminder = (muhurat: Muhurat) => {
     if ('Notification' in window) {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
@@ -184,16 +256,33 @@ export default function MuhuratFinderLite() {
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Birth Location
               </label>
-              <div className="relative">
+              <div className="relative" ref={suggestionsRef}>
                 <MapPin className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="City, Country"
                   value={birthData.location}
-                  onChange={(e) => setBirthData(prev => ({ ...prev, location: e.target.value }))}
+                  onChange={handleLocationChange}
+                  onFocus={() => birthData.location.length > 1 && setShowSuggestions(true)}
                   className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-amber-500 focus:outline-none transition-colors"
                   required
                 />
+                {showSuggestions && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {locationSuggestions.map((location, index) => (
+                      <div 
+                        key={index}
+                        className="px-4 py-2 hover:bg-amber-50 cursor-pointer transition-colors"
+                        onClick={() => selectLocation(location)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-amber-500" />
+                          <span>{location}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -247,7 +336,7 @@ export default function MuhuratFinderLite() {
               key={key}
               onClick={() => {
                 setSelectedEventType(key);
-                generateMuhurats();
+                generateMuhurats(key);
               }}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 selectedEventType === key
